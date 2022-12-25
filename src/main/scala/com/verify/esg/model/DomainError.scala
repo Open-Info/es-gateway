@@ -7,7 +7,8 @@ import sttp.model.StatusCode
 sealed trait DomainError {
   val message: String
   val cause: Option[Throwable]
-  val ex: Exception = new Exception(message, cause.orNull)
+
+  def ex: Exception = cause.fold(new Exception(message))(c => new Exception(message, c))
 }
 
 sealed trait ClientError extends DomainError

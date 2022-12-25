@@ -3,6 +3,7 @@ package com.verify.esg
 import cats.effect._
 import cats.implicits._
 import com.verify.esg.client.EsClientImpl
+import com.verify.esg.service.EsServiceImpl
 import sttp.client3.httpclient.cats.HttpClientCatsBackend
 
 object Main extends IOApp {
@@ -13,15 +14,8 @@ object Main extends IOApp {
       for {
         config <- EsgConfig.load[IO]
         esClient = new EsClientImpl[IO](config.esClientConfig)
-        response <- esClient.getTransactions(walletId)
-        _ <- response match {
-          case Right(response) =>
-            val wallets = response.result.foldLeft(Set.empty[String])((acc, t) => acc + t.to + t.from)
-            val finalWallets = (wallets - walletId).toVector
-            finalWallets.traverse(IO.println)
-          case Left(e) =>
-            IO.raiseError(e.ex)
-        }
+        esService = new EsServiceImpl[IO](esClient)
+        _ <- esService.getFriends(walletId).flatMap(_.toVector.traverse(IO.println))
       } yield ExitCode.Success
     }
   }
