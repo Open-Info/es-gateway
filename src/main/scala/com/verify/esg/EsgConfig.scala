@@ -1,6 +1,7 @@
 package com.verify.esg
 
 import cats.effect.Sync
+import com.comcast.ip4s.{Host, Port}
 import pureconfig._
 import pureconfig.error.CannotConvert
 import pureconfig.generic.auto._
@@ -15,12 +16,33 @@ final case class EsClientConfig(
   apiKey: String
 )
 
+final case class ServerConfig(
+  port: Port,
+  host: Host
+)
+
 final case class EsgConfig(
-  esClientConfig: EsClientConfig
+  esClientConfig: EsClientConfig,
+  serverConfig: ServerConfig
 )
 
 object EsgConfig {
-  // Taken from sttp pureconfig module
+  implicit val portReader: ConfigReader[Port] =
+    ConfigReader.fromNonEmptyString { str =>
+      Port.fromString(str) match {
+        case Some(port) => Right(port)
+        case None => Left(CannotConvert(str, "com.comcast.ip4s.Port", "Incorrect format"))
+      }
+    }
+
+  implicit val hostReader: ConfigReader[Host] =
+    ConfigReader.fromNonEmptyString { str =>
+      Host.fromString(str) match {
+        case Some(host) => Right(host)
+        case None => Left(CannotConvert(str, "com.comcast.ip4s.Host", "Incorrect format"))
+      }
+    }
+
   implicit val uriReader: ConfigReader[Uri] =
     ConfigReader.fromNonEmptyString { str =>
       Try(uri"$str") match {

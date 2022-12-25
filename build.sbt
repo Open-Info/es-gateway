@@ -7,6 +7,7 @@ lazy val catsVersion = "2.9.0"
 lazy val catsEffectVersion = "3.4.2"
 lazy val circeVersion = "0.14.1"
 lazy val pureconfigVersion = "0.17.2"
+lazy val http4sVersion = "0.23.16"
 
 lazy val root = (project in file("."))
   .settings(
@@ -30,6 +31,11 @@ lazy val root = (project in file("."))
     libraryDependencies ++= Seq(
       "com.github.pureconfig" %% "pureconfig",
       "com.github.pureconfig" %% "pureconfig-cats-effect"
-      //"com.github.pureconfig" %% "pureconfig-sttp"
-    ).map(_ % pureconfigVersion)
+    ).map(_ % pureconfigVersion),
+
+    libraryDependencies ++= Seq(
+      "org.http4s" %% "http4s-dsl",
+      "org.http4s" %% "http4s-circe",
+      "org.http4s" %% "http4s-ember-server"
+    ).map(_ % http4sVersion),
   )
