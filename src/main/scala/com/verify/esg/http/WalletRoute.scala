@@ -8,7 +8,7 @@ import org.http4s.circe.CirceEntityCodec.circeEntityEncoder
 
 import scala.util.matching.Regex
 
-final case class WalletRoute[F[_] : Async](esService: EsService[F]) extends EsgRoute[F] {
+final case class WalletRoute[F[_] : Async](esService: EsService[F]) extends Route[F] {
   object WalletIdVar {
     private val regex: Regex = "^0x[0-9a-fA-F]{40}$".r
 
