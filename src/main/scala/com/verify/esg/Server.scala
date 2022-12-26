@@ -11,7 +11,7 @@ import org.http4s.server.{Router, Server}
 object Server {
   def build[F[_] : Async](esService: EsService[F]): Resource[F, Server] = {
     val httpApp = Router(
-      "/wallet" -> new WalletRoute[F](esService).route
+      "/wallet" -> WalletRoute[F](esService).route
     ).orNotFound
 
     EmberServerBuilder.default[F]
