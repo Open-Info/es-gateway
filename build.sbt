@@ -4,7 +4,7 @@ ThisBuild / scalaVersion := "2.13.10"
 
 lazy val sttpVersion = "3.8.5"
 lazy val catsVersion = "2.9.0"
-lazy val catsEffectVersion = "3.4.2"
+lazy val catsEffectVersion = "3.4.4"
 lazy val circeVersion = "0.14.1"
 lazy val pureconfigVersion = "0.17.2"
 lazy val http4sVersion = "0.23.16"
@@ -12,6 +12,8 @@ lazy val http4sVersion = "0.23.16"
 lazy val root = (project in file("."))
   .settings(
     name := "es-gateway",
+    Compile / mainClass := Some("com.verify.esg.Main"),
+    dockerBaseImage := "openjdk:jre",
 
     libraryDependencies ++= Seq(
       "com.softwaremill.sttp.client3" %% "core",
@@ -39,3 +41,6 @@ lazy val root = (project in file("."))
       "org.http4s" %% "http4s-ember-server"
     ).map(_ % http4sVersion),
   )
+
+enablePlugins(JavaAppPackaging)
+enablePlugins(DockerPlugin)
