@@ -6,6 +6,7 @@ import com.verify.esg.EsClientConfig
 import com.verify.esg.model.etherscan.TransactionsResponse
 import com.verify.esg.model.{ClientError, DeserializationError, SttpError, HttpError => DomHttpError}
 import io.circe.generic.auto._
+import org.typelevel.log4cats.{Logger, SelfAwareStructuredLogger}
 import org.typelevel.log4cats.slf4j.Slf4jLogger
 import sttp.client3._
 import sttp.client3.circe._
@@ -17,6 +18,8 @@ trait EsClient[F[_]] {
 class EsClientImpl[F[_] : Async](
   esClientConfig: EsClientConfig
 )(implicit sttpBackend: SttpBackend[F, Any]) extends EsClient[F] {
+  implicit def unsafeLogger: SelfAwareStructuredLogger[F] = Slf4jLogger.getLogger[F]
+
   override def getTransactions(walletId: String): F[Either[ClientError, TransactionsResponse]] = {
     val uri = esClientConfig.uri
       .withParams(
@@ -30,7 +33,7 @@ class EsClientImpl[F[_] : Async](
       .get(uri)
       .response(asJson[TransactionsResponse])
 
-    val response = req.send(sttpBackend).redeem(
+    val responseF = req.send(sttpBackend).redeem(
       e => SttpError(e).asLeft,
       r => r.body.leftMap {
         case DeserializationException(_, e) => DeserializationError(e)
@@ -39,10 +42,9 @@ class EsClientImpl[F[_] : Async](
     )
 
     for {
-      logger <- Slf4jLogger.create[F]
-      _ <- logger.debug(s"Starting transactions request for walletId $walletId")
-      response <- response
-      _ <- logger.debug(s"Transactions request complete for walletId $walletId")
+      _ <- Logger[F].debug(s"Sending request GET etherscan.txlist for walletId $walletId")
+      response <- responseF
+      _ <- Logger[F].debug(s"GET etherscan.txlist request complete for walletId $walletId")
     } yield response
   }
 }
