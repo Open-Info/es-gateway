@@ -1,16 +1,17 @@
 package com.verify.esg.service
 
-import cats.effect.Async
+import cats.effect.MonadCancelThrow
 import cats.implicits._
 import com.verify.esg.client.EsClient
 import com.verify.esg.model.etherscan.Transaction
 
 trait EsService[F[_]] {
   def getFriends(walletId: String): F[Set[String]]
+
   def getTransactions(walletId: String): F[Vector[Transaction]]
 }
 
-final class EsServiceImpl[F[_] : Async](esClient: EsClient[F]) extends EsService[F] {
+final class EsServiceImpl[F[_] : MonadCancelThrow](esClient: EsClient[F]) extends EsService[F] {
   override def getFriends(walletId: String): F[Set[String]] = {
     esClient.getTransactions(walletId).flatMap {
       case Right(response) =>
