@@ -2,6 +2,8 @@ ThisBuild / version := "0.1.0-SNAPSHOT"
 ThisBuild / organization := "com.verify"
 ThisBuild / scalaVersion := "2.13.10"
 
+enablePlugins(sbtdocker.DockerPlugin, JavaAppPackaging)
+
 lazy val sttpVersion = "3.8.5"
 lazy val catsVersion = "2.9.0"
 lazy val catsEffectVersion = "3.4.4"
@@ -14,8 +16,6 @@ lazy val log4catsVersion = "2.5.0"
 lazy val root = (project in file("."))
   .settings(
     name := "es-gateway",
-    Compile / mainClass := Some("com.verify.esg.Main"),
-    dockerBaseImage := "openjdk:jre",
 
     libraryDependencies ++= Seq(
       "com.softwaremill.sttp.client3" %% "core",
@@ -48,8 +48,16 @@ lazy val root = (project in file("."))
     libraryDependencies ++= Seq(
       "org.typelevel" %% "log4cats-core" % log4catsVersion,
       "org.typelevel" %% "log4cats-slf4j" % log4catsVersion,
-    )
-  )
+    ),
 
-enablePlugins(JavaAppPackaging)
-enablePlugins(DockerPlugin)
+    docker / dockerfile := {
+      val appDir: File = stage.value
+      val targetDir = "/app"
+
+      new Dockerfile {
+        from("openjdk:11-jre")
+        entryPoint(s"$targetDir/bin/${executableScriptName.value}")
+        copy(appDir, targetDir, chown = "daemon:daemon")
+      }
+    }
+  )
