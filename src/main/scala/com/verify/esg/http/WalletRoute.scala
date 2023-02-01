@@ -1,6 +1,6 @@
 package com.verify.esg.http
 
-import cats.effect.Async
+import cats.effect.Sync
 import cats.implicits.{catsSyntaxApply, toFlatMapOps}
 import com.verify.esg.service.EsService
 import org.http4s.circe.CirceEntityCodec.circeEntityEncoder
@@ -10,7 +10,7 @@ import org.typelevel.log4cats.{Logger, SelfAwareStructuredLogger}
 
 import scala.util.matching.Regex
 
-final case class WalletRoute[F[_] : Async](esService: EsService[F]) extends Route[F] {
+final case class WalletRoute[F[_] : Sync](esService: EsService[F]) extends Route[F] {
   implicit def unsafeLogger: SelfAwareStructuredLogger[F] = Slf4jLogger.getLogger[F]
 
   private def logReceive(method: Method, name: String): F[Unit] =

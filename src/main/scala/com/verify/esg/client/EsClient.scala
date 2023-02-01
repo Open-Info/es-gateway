@@ -1,13 +1,13 @@
 package com.verify.esg.client
 
-import cats.effect.Async
+import cats.effect.Sync
 import cats.implicits._
 import com.verify.esg.EsClientConfig
 import com.verify.esg.model.etherscan.TransactionsResponse
 import com.verify.esg.model.{ClientError, DeserializationError, SttpError, HttpError => DomHttpError}
 import io.circe.generic.auto._
-import org.typelevel.log4cats.{Logger, SelfAwareStructuredLogger}
 import org.typelevel.log4cats.slf4j.Slf4jLogger
+import org.typelevel.log4cats.{Logger, SelfAwareStructuredLogger}
 import sttp.client3._
 import sttp.client3.circe._
 
@@ -15,7 +15,7 @@ trait EsClient[F[_]] {
   def getTransactions(walletId: String): F[Either[ClientError, TransactionsResponse]]
 }
 
-class EsClientImpl[F[_] : Async](
+class EsClientImpl[F[_] : Sync](
   esClientConfig: EsClientConfig
 )(implicit sttpBackend: SttpBackend[F, Any]) extends EsClient[F] {
   implicit def unsafeLogger: SelfAwareStructuredLogger[F] = Slf4jLogger.getLogger[F]
