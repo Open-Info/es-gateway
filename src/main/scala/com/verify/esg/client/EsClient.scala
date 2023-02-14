@@ -16,8 +16,9 @@ trait EsClient[F[_]] {
 }
 
 class EsClientImpl[F[_] : Sync](
-  esClientConfig: EsClientConfig
-)(implicit sttpBackend: SttpBackend[F, Any]) extends EsClient[F] {
+  esClientConfig: EsClientConfig,
+  sttpBackend: SttpBackend[F, Any]
+) extends EsClient[F] {
   implicit def unsafeLogger: SelfAwareStructuredLogger[F] = Slf4jLogger.getLogger[F]
 
   override def getTransactions(walletId: String): F[Either[ClientError, TransactionsResponse]] = {

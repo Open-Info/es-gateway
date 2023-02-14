@@ -12,6 +12,7 @@ lazy val pureconfigVersion = "0.17.2"
 lazy val http4sVersion = "0.23.16"
 lazy val logbackVersion = "1.4.5"
 lazy val log4catsVersion = "2.5.0"
+lazy val scalaTestVersion = "3.2.15"
 
 lazy val root = (project in file("."))
   .settings(
@@ -49,6 +50,9 @@ lazy val root = (project in file("."))
       "org.typelevel" %% "log4cats-core" % log4catsVersion,
       "org.typelevel" %% "log4cats-slf4j" % log4catsVersion,
     ),
+
+    libraryDependencies += "org.scalactic" %% "scalactic" % scalaTestVersion,
+    libraryDependencies += "org.scalatest" %% "scalatest" % scalaTestVersion % "test",
 
     docker / dockerfile := {
       val appDir: File = stage.value

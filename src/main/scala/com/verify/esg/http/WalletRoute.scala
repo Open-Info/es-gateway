@@ -1,7 +1,7 @@
 package com.verify.esg.http
 
 import cats.effect.Sync
-import cats.implicits.{catsSyntaxApply, toFlatMapOps}
+import cats.implicits._
 import com.verify.esg.service.EsService
 import org.http4s.circe.CirceEntityCodec.circeEntityEncoder
 import org.http4s.{HttpRoutes, Method}
@@ -24,12 +24,18 @@ final case class WalletRoute[F[_] : Sync](esService: EsService[F]) extends Route
   }
 
   override val route: HttpRoutes[F] = HttpRoutes.of[F] {
-    case _@GET -> Root / WalletIdVar(walletId) / "friend" =>
-      logReceive(GET, s"/wallet/{walletId}/friend $walletId") *>
-        esService.getFriends(walletId).flatMap(items => Ok(items))
+    case GET -> Root / WalletIdVar(walletId) / "friend" =>
+      for {
+        _ <- logReceive(GET, s"/wallet/{walletId}/friend $walletId")
+        friends <- esService.getFriends(walletId)
+        response <- Ok(friends)
+      } yield response
 
-    case _@GET -> Root / WalletIdVar(walletId) / "transaction" =>
-      logReceive(GET, s"/wallet/{walletId}/transaction $walletId") *>
-        esService.getTransactions(walletId).flatMap(items => Ok(items))
+    case GET -> Root / WalletIdVar(walletId) / "transaction" =>
+      for {
+        _ <- logReceive(GET, s"/wallet/{walletId}/transaction $walletId")
+        transactions <- esService.getTransactions(walletId)
+        response <- Ok(transactions)
+      } yield response
   }
 }
