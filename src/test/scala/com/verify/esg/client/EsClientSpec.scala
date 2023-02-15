@@ -59,7 +59,7 @@ class EsClientSpec extends AnyFlatSpec with Matchers {
 
     val esClient = new EsClientImpl[IO](config, backend)
     val result = esClient.getTransactions("some-id").unsafeRunSync()
-    val error = result.left.getOrElse(fail())
+    val error = result.left.getOrElse(fail("Expected some left"))
 
     error shouldBe a[DeserializationError]
   }
@@ -76,7 +76,7 @@ class EsClientSpec extends AnyFlatSpec with Matchers {
 
     val esClient = new EsClientImpl[IO](config, backend)
     val result = esClient.getTransactions("some-id").unsafeRunSync()
-    val error = result.left.getOrElse(fail())
+    val error = result.left.getOrElse(fail("Expected some left"))
 
     error shouldBe a[SttpError]
   }
@@ -93,7 +93,7 @@ class EsClientSpec extends AnyFlatSpec with Matchers {
 
     val esClient = new EsClientImpl[IO](config, backend)
     val result = esClient.getTransactions("some-id").unsafeRunSync()
-    val error = result.left.getOrElse(fail())
+    val error = result.left.getOrElse(fail("Expected some left"))
 
     error shouldBe a[HttpDomainError]
   }
