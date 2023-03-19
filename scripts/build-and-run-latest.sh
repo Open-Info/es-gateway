@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 source ./scripts/build-latest.sh
 
 # change this to your own API key
