@@ -18,4 +18,4 @@ Gateway for experimentation with the Etherscan API
 - Install `Java 17 JRE`, [sbt](https://www.scala-sbt.org/download.html) and Docker
 - Run `sbt stage` to compile and stage the application
 - Run `docker build -t es-gateway:latest .` to build the and publish the image
-- Run the image with `docker run --rm -p 80:80 -e "ES_API_KEY=<your-etherscan-key>" <image-id>`
+- Run the image with `docker run --rm -p 80:80 -e ES_API_KEY=<your-etherscan-key> <image-id>`
