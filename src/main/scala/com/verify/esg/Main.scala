@@ -12,7 +12,7 @@ object Main extends IOApp {
         config <- EsgConfig.load[IO]
         esClient = EsClient[IO](config.esClientConfig, sttpBackend)
         esService = EsService[IO](esClient)
-        _ <- Server.build[IO](esService).use(_ => IO.never)
+        _ <- Server.build[IO](esService, config.serverConfig.host, config.serverConfig.port).use(_ => IO.never)
       } yield ExitCode.Success
     }
 }
