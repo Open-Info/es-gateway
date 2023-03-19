@@ -1,7 +1,7 @@
 package com.verify.esg.http
 
 import cats.effect.Sync
-import cats.implicits._
+import cats.syntax.all._
 import com.verify.esg.service.EsService
 import org.http4s.circe.CirceEntityCodec.circeEntityEncoder
 import org.http4s.{HttpRoutes, Method}
@@ -11,7 +11,7 @@ import org.typelevel.log4cats.{Logger, SelfAwareStructuredLogger}
 import scala.util.matching.Regex
 
 final case class WalletRoute[F[_] : Sync](esService: EsService[F]) extends Route[F] {
-  implicit def unsafeLogger: SelfAwareStructuredLogger[F] = Slf4jLogger.getLogger[F]
+  implicit val logger: SelfAwareStructuredLogger[F] = Slf4jLogger.getLogger[F]
 
   private def logReceive(method: Method, name: String): F[Unit] =
     Logger[F].info(s"${method.name} -> $name")
@@ -24,18 +24,22 @@ final case class WalletRoute[F[_] : Sync](esService: EsService[F]) extends Route
   }
 
   override val route: HttpRoutes[F] = HttpRoutes.of[F] {
-    case GET -> Root / WalletIdVar(walletId) / "friend" =>
+    case GET -> Root / "wallet" / WalletIdVar(walletId) / "friend" =>
       for {
         _ <- logReceive(GET, s"/wallet/{walletId}/friend $walletId")
         friends <- esService.getFriends(walletId)
         response <- Ok(friends)
       } yield response
 
-    case GET -> Root / WalletIdVar(walletId) / "transaction" =>
+    case GET -> Root / "wallet" / WalletIdVar(walletId) / "transaction" =>
       for {
         _ <- logReceive(GET, s"/wallet/{walletId}/transaction $walletId")
         transactions <- esService.getTransactions(walletId)
         response <- Ok(transactions)
       } yield response
   }
+}
+
+object WalletRoute {
+  def apply[F[_]: Sync](esService: EsService[F]): WalletRoute[F] = new WalletRoute[F](esService)
 }

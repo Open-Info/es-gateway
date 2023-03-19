@@ -1,7 +1,7 @@
 package com.verify.esg
 
 import cats.effect.Sync
-import cats.implicits.toBifunctorOps
+import cats.syntax.all._
 import com.comcast.ip4s.{Host, Port}
 import pureconfig._
 import pureconfig.error.CannotConvert

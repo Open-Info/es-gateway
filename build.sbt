@@ -6,13 +6,15 @@ enablePlugins(sbtdocker.DockerPlugin, JavaAppPackaging)
 
 lazy val sttpVersion = "3.8.5"
 lazy val catsVersion = "2.9.0"
-lazy val catsEffectVersion = "3.4.4"
+lazy val catsEffectVersion = "3.4.8"
 lazy val circeVersion = "0.14.1"
 lazy val pureconfigVersion = "0.17.2"
 lazy val http4sVersion = "0.23.16"
-lazy val logbackVersion = "1.4.5"
+lazy val logbackVersion = "1.4.6"
 lazy val log4catsVersion = "2.5.0"
 lazy val scalaTestVersion = "3.2.15"
+lazy val newtypesVersion = "0.2.3"
+lazy val scalaMockVersion = "5.2.0"
 
 lazy val root = (project in file("."))
   .settings(
@@ -28,6 +30,11 @@ lazy val root = (project in file("."))
     libraryDependencies += "org.typelevel" %% "cats-effect" % catsEffectVersion,
 
     libraryDependencies ++= Seq(
+      "io.monix" %% "newtypes-core",
+      "io.monix" %% "newtypes-circe-v0-14"
+    ).map(_ % newtypesVersion),
+
+      libraryDependencies ++= Seq(
       "io.circe" %% "circe-core",
       "io.circe" %% "circe-generic",
       "io.circe" %% "circe-parser"
@@ -47,12 +54,13 @@ lazy val root = (project in file("."))
     libraryDependencies += "ch.qos.logback" % "logback-classic" % logbackVersion % Runtime,
 
     libraryDependencies ++= Seq(
-      "org.typelevel" %% "log4cats-core" % log4catsVersion,
-      "org.typelevel" %% "log4cats-slf4j" % log4catsVersion,
-    ),
+      "org.typelevel" %% "log4cats-core",
+      "org.typelevel" %% "log4cats-slf4j",
+    ).map(_ % log4catsVersion),
 
     libraryDependencies += "org.scalactic" %% "scalactic" % scalaTestVersion,
-    libraryDependencies += "org.scalatest" %% "scalatest" % scalaTestVersion % "test",
+    libraryDependencies += "org.scalatest" %% "scalatest" % scalaTestVersion % Test,
+    libraryDependencies += "org.scalamock" %% "scalamock" % scalaMockVersion % Test,
 
     docker / dockerfile := {
       val appDir: File = stage.value

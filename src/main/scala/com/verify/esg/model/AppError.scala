@@ -4,14 +4,12 @@ import cats.syntax.option._
 import io.circe.{Error => CirceError}
 import sttp.model.StatusCode
 
-sealed trait DomainError {
+sealed trait AppError extends Exception {
   val message: String
   val cause: Option[Throwable]
-
-  def ex: Exception = cause.fold(new Exception(message))(c => new Exception(message, c))
 }
 
-sealed trait ClientError extends DomainError
+sealed trait ClientError extends AppError
 
 final case class DeserializationError(circeError: CirceError) extends ClientError {
   override val message: String = s"Deserialization failed"
