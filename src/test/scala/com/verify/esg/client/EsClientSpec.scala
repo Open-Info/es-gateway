@@ -9,8 +9,8 @@ import com.verify.esg.model.{DeserializationError, SttpError, HttpError => HttpD
 import org.scalatest.EitherValues
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should._
-import sttp.client3.{Request, UriContext}
 import sttp.client3.httpclient.cats.HttpClientCatsBackend
+import sttp.client3.{Request, UriContext}
 import sttp.model.{Method, StatusCode}
 
 class EsClientSpec extends AnyFlatSpec with Matchers with EitherValues {

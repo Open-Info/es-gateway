@@ -2,7 +2,7 @@ ThisBuild / version := "0.1.0-SNAPSHOT"
 ThisBuild / organization := "com.verify"
 ThisBuild / scalaVersion := "2.13.10"
 
-enablePlugins(sbtdocker.DockerPlugin, JavaAppPackaging)
+enablePlugins(JavaAppPackaging)
 
 lazy val sttpVersion = "3.8.5"
 lazy val catsVersion = "2.9.0"
@@ -19,6 +19,8 @@ lazy val scalaMockVersion = "5.2.0"
 lazy val root = (project in file("."))
   .settings(
     name := "es-gateway",
+    Compile / mainClass := Some("com.verify.esg.Main"),
+    Compile / discoveredMainClasses := Seq.empty,
 
     libraryDependencies ++= Seq(
       "com.softwaremill.sttp.client3" %% "core",
@@ -34,7 +36,7 @@ lazy val root = (project in file("."))
       "io.monix" %% "newtypes-circe-v0-14"
     ).map(_ % newtypesVersion),
 
-      libraryDependencies ++= Seq(
+    libraryDependencies ++= Seq(
       "io.circe" %% "circe-core",
       "io.circe" %% "circe-generic",
       "io.circe" %% "circe-parser"
@@ -61,15 +63,4 @@ lazy val root = (project in file("."))
     libraryDependencies += "org.scalactic" %% "scalactic" % scalaTestVersion,
     libraryDependencies += "org.scalatest" %% "scalatest" % scalaTestVersion % Test,
     libraryDependencies += "org.scalamock" %% "scalamock" % scalaMockVersion % Test,
-
-    docker / dockerfile := {
-      val appDir: File = stage.value
-      val targetDir = "/app"
-
-      new Dockerfile {
-        from("openjdk:11-jre")
-        entryPoint(s"$targetDir/bin/${executableScriptName.value}")
-        copy(appDir, targetDir, chown = "daemon:daemon")
-      }
-    }
   )
