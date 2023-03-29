@@ -1,27 +1,24 @@
 package com.verify.esg.model
 
-import cats.syntax.option._
-import io.circe.{Error => CirceError}
 import sttp.model.StatusCode
 
-sealed trait AppError extends Exception {
-  val message: String
-  val cause: Option[Throwable]
-}
+sealed abstract class AppError(val message: String, val cause: Option[Throwable]) extends Exception(message, cause.orNull)
 
-sealed trait ClientError extends AppError
-
-final case class DeserializationError(circeError: CirceError) extends ClientError {
-  override val message: String = s"Deserialization failed"
-  override val cause: Option[Throwable] = circeError.some
-}
-
-final case class SttpError(error: Throwable) extends ClientError {
-  override val message: String = "Error encountered from sttp"
-  override val cause: Option[Throwable] = error.some
-}
-
-final case class HttpError(statusCode: StatusCode) extends ClientError {
-  override val message: String = s"Request failed with code ${statusCode.code}"
+sealed abstract class ClientError(
+  override val message: String,
   override val cause: Option[Throwable] = None
-}
+) extends AppError(message, cause)
+
+final case class DeserializationError(error: Throwable) extends ClientError(
+  message = s"Failed to deserialize response with message: ${error.getMessage}",
+  cause = Some(error)
+)
+
+final case class SttpError(error: Throwable) extends ClientError(
+  message = "Failed to send request",
+  cause = Some(error)
+)
+
+final case class HttpError(statusCode: StatusCode) extends ClientError(
+  message = s"Received unexpected status code $statusCode"
+)
