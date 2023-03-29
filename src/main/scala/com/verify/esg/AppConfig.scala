@@ -17,17 +17,22 @@ final case class EsClientConfig(
   apiKey: String
 )
 
+final case class EsServiceConfig(
+  numBlocks: Int,
+)
+
 final case class ServerConfig(
   port: Port,
   host: Host
 )
 
-final case class EsgConfig(
+final case class AppConfig(
   esClientConfig: EsClientConfig,
+  esServiceConfig: EsServiceConfig,
   serverConfig: ServerConfig
 )
 
-object EsgConfig {
+object AppConfig {
   implicit val portReader: ConfigReader[Port] =
     ConfigReader.fromNonEmptyString { str =>
       Port.fromString(str).toRight(CannotConvert(str, "com.comcast.ip4s.Port", "Incorrect format"))
@@ -43,5 +48,5 @@ object EsgConfig {
       Try(uri"$str").toEither.leftMap(ex => CannotConvert(str, "sttp.model.Uri", ex.getMessage))
     }
 
-  def load[F[_] : Sync]: F[EsgConfig] = ConfigSource.default.loadF[F, EsgConfig]()
+  def load[F[_] : Sync]: F[AppConfig] = ConfigSource.default.loadF[F, AppConfig]()
 }

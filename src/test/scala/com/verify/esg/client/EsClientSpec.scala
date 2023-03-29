@@ -2,10 +2,13 @@ package com.verify.esg.client
 
 import cats.effect.IO
 import cats.effect.unsafe.implicits.global
+import cats.syntax.option._
 import com.verify.common.ras
 import com.verify.esg.EsClientConfig
-import com.verify.esg.model.etherscan.{Transaction, TransactionsResponse}
-import com.verify.esg.model.{DeserializationError, SttpError, HttpError => HttpDomainError}
+import com.verify.esg.client.etherscan.EsClient
+import com.verify.esg.client.etherscan.model.EsTransaction
+import com.verify.esg.model.EthAddressId.EthAddressOps
+import com.verify.esg.model.{DeserializationError, EthAddressId, SttpError, TransactionValue, HttpError => HttpDomainError}
 import org.scalatest.EitherValues
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should._
@@ -22,7 +25,7 @@ class EsClientSpec extends AnyFlatSpec with Matchers with EitherValues {
       apiKey = "some-key"
     )
 
-  val walletId: String = "0x0e9989e703f39880a8e2759bb93b4a9ddd11accf"
+  val walletId: EthAddressId = "0x0e9989e703f39880a8e2759bb93b4a9ddd11accf".unsafeEth
 
   def goodTransactionsRequest(request: Request[_, _]): Boolean =
     (request.method is Method.GET) &&
@@ -32,6 +35,9 @@ class EsClientSpec extends AnyFlatSpec with Matchers with EitherValues {
         ("module", "account"),
         ("action", "txlist"),
         ("address", walletId),
+        ("startblock", "0"),
+        ("endblock", "1"),
+        ("sort", "desc"),
         ("apikey", "some-key"))) &&
       (request.uri.path == Seq("api"))
 
@@ -43,31 +49,30 @@ class EsClientSpec extends AnyFlatSpec with Matchers with EitherValues {
       .thenRespond(esResponse)
 
     val esClient = EsClient[IO](config, backend)
-    val result = esClient.getTransactions(walletId).unsafeRunSync()
+    val result = esClient.getTransactions(walletId, 0, 1).unsafeRunSync()
 
     val expected =
-      TransactionsResponse(
-        status = "1",
-        message = "OK",
-        result = Vector(
-          Transaction(
-            hash = "0x80d527379ae8940ca3dc15042e73f16b25446a90336824b5a24c3d34c5dfd41a",
-            to = "0x0e9989e703f39880a8e2759bb93b4a9ddd11accf",
-            from = "0x6dba2793e1b0e47fdab2a5156c90a05033726bdd",
-            value = Transaction.Value(BigInt(124197120000000000L))
-          ),
-          Transaction(
-            hash = "0xb4b37733664ba5257877942a7e683ce0282fcf37165ee075d476a01fcc4f74ef",
-            to = "0x0e9989e703f39880a8e2759bb93b4a9ddd11accf",
-            from = "0x6dba2793e1b0e47fdab2a5156c90a05033726bdd",
-            value = Transaction.Value(BigInt(13191840000000000L))
-          ),
-          Transaction(
-            hash = "0x53a76601f5a7417267a0d5ae3d948127bfa86ec8ed784443ac8e9d6b08baedf2",
-            to = "0xe0b32c2e7fd602fd47e64c319d00e3cbbad31ea3",
-            from = "0x0e9989e703f39880a8e2759bb93b4a9ddd11accf",
-            value = Transaction.Value(BigInt(131592960000000000L))
-          )
+      Vector(
+        EsTransaction(
+          hash = "0x80d527379ae8940ca3dc15042e73f16b25446a90336824b5a24c3d34c5dfd41a",
+          to = "0x0e9989e703f39880a8e2759bb93b4a9ddd11accf".unsafeEth.some,
+          from = "0x6dba2793e1b0e47fdab2a5156c90a05033726bdd".unsafeEth,
+          value = TransactionValue(124197120000000000L.toString),
+          contractAddress = None
+        ),
+        EsTransaction(
+          hash = "0xb4b37733664ba5257877942a7e683ce0282fcf37165ee075d476a01fcc4f74ef",
+          to = "0x0e9989e703f39880a8e2759bb93b4a9ddd11accf".unsafeEth.some,
+          from = "0x6dba2793e1b0e47fdab2a5156c90a05033726bdd".unsafeEth,
+          value = TransactionValue(13191840000000000L.toString),
+          contractAddress = None
+        ),
+        EsTransaction(
+          hash = "0x53a76601f5a7417267a0d5ae3d948127bfa86ec8ed784443ac8e9d6b08baedf2",
+          to = "0xe0b32c2e7fd602fd47e64c319d00e3cbbad31ea3".unsafeEth.some,
+          from = "0x0e9989e703f39880a8e2759bb93b4a9ddd11accf".unsafeEth,
+          value = TransactionValue(131592960000000000L.toString),
+          contractAddress = None
         )
       )
 
@@ -80,7 +85,7 @@ class EsClientSpec extends AnyFlatSpec with Matchers with EitherValues {
       .thenRespond("""{ "foo": "bar" }""")
 
     val esClient = EsClient[IO](config, backend)
-    val result = esClient.getTransactions(walletId).attempt.unsafeRunSync()
+    val result = esClient.getTransactions(walletId, 0, 1).attempt.unsafeRunSync()
     val error = result.left.value
 
     error shouldBe a[DeserializationError]
@@ -92,7 +97,7 @@ class EsClientSpec extends AnyFlatSpec with Matchers with EitherValues {
       .thenRespondF(IO.raiseError(new Throwable("Boom!")))
 
     val esClient = EsClient[IO](config, backend)
-    val result = esClient.getTransactions(walletId).attempt.unsafeRunSync()
+    val result = esClient.getTransactions(walletId, 0, 1).attempt.unsafeRunSync()
     val error = result.left.value
 
     error shouldBe a[SttpError]
@@ -104,7 +109,7 @@ class EsClientSpec extends AnyFlatSpec with Matchers with EitherValues {
       .thenRespond("You ran into an error!", StatusCode.InternalServerError)
 
     val esClient = EsClient[IO](config, backend)
-    val result = esClient.getTransactions(walletId).attempt.unsafeRunSync()
+    val result = esClient.getTransactions(walletId, 0, 1).attempt.unsafeRunSync()
     val error = result.left.value
 
     error shouldBe a[HttpDomainError]

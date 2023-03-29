@@ -10,7 +10,7 @@ import org.http4s.server.{Router, Server}
 
 object Server {
   def build[F[_] : Async](esService: EsService[F], host: Host, port: Port): Resource[F, Server] = {
-    val httpApp = Router("/" -> WalletRoute[F](esService).route).orNotFound
+    val httpApp = Router("/" -> WalletRoute[F](esService).apply).orNotFound
 
     EmberServerBuilder.default[F]
       .withHost(host)

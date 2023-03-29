@@ -1,4 +1,4 @@
-ThisBuild / version := "0.1.0-SNAPSHOT"
+ThisBuild / version := "0.2.0-SNAPSHOT"
 ThisBuild / organization := "com.verify"
 ThisBuild / scalaVersion := "2.13.10"
 
@@ -15,6 +15,9 @@ lazy val log4catsVersion = "2.5.0"
 lazy val scalaTestVersion = "3.2.15"
 lazy val newtypesVersion = "0.2.3"
 lazy val scalaMockVersion = "5.2.0"
+lazy val neotypesVersion = "0.23.2"
+lazy val neo4jVersion = "5.6.0"
+lazy val catsEffectTimeVersion = "0.2.0"
 
 lazy val root = (project in file("."))
   .settings(
@@ -31,10 +34,20 @@ lazy val root = (project in file("."))
     libraryDependencies += "org.typelevel" %% "cats-core" % catsVersion,
     libraryDependencies += "org.typelevel" %% "cats-effect" % catsEffectVersion,
 
+    libraryDependencies += "io.chrisdavenport" %% "cats-effect-time" % catsEffectTimeVersion,
+
     libraryDependencies ++= Seq(
       "io.monix" %% "newtypes-core",
       "io.monix" %% "newtypes-circe-v0-14"
     ).map(_ % newtypesVersion),
+
+    libraryDependencies += "org.neo4j.driver" % "neo4j-java-driver" % neo4jVersion,
+
+    libraryDependencies ++= Seq(
+      "io.github.neotypes" %% "neotypes-core",
+      "io.github.neotypes" %% "neotypes-generic",
+      "io.github.neotypes" %% "neotypes-cats-effect"
+    ).map(_ % neotypesVersion),
 
     libraryDependencies ++= Seq(
       "io.circe" %% "circe-core",
