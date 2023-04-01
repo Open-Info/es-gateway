@@ -1,8 +1,8 @@
 package com.verify.esg.client.etherscan.model
 
 import com.verify.esg.model.{EthAddressId, TransactionValue}
-import io.circe.generic.semiauto.deriveDecoder
 import io.circe.Decoder
+import io.circe.generic.semiauto.deriveDecoder
 
 final case class EsTransaction(
   hash: String,

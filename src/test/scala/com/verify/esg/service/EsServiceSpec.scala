@@ -6,9 +6,9 @@ import cats.syntax.option._
 import com.verify.esg.EsServiceConfig
 import com.verify.esg.client.etherscan.EsClient
 import com.verify.esg.client.etherscan.model.EsTransaction
-import com.verify.esg.neo.TransactionNeo
 import com.verify.esg.model.EthAddressId.EthAddressOps
 import com.verify.esg.model.{EthAddressId, EthTransaction, EthWallet, TransactionValue}
+import com.verify.esg.neo.TransactionNeo
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
@@ -56,6 +56,9 @@ class EsServiceSpec extends AnyFlatSpec with Matchers with MockFactory {
     (mockEsClient.getLastBlock _)
       .expects()
       .returns(IO.pure(100))
+    (mockEsClient.getContractInfo _)
+      .expects(*)
+      .returns(IO.pure(Set.empty))
 
     val esService = EsService[IO](mockEsClient, mockTransactionNeo, config)
     val expected = Set(
@@ -78,6 +81,9 @@ class EsServiceSpec extends AnyFlatSpec with Matchers with MockFactory {
     (mockEsClient.getLastBlock _)
       .expects()
       .returns(IO.pure(100))
+    (mockEsClient.getContractInfo _)
+      .expects(*)
+      .returns(IO.pure(Set.empty))
 
     val esService = EsService[IO](mockEsClient, mockTransactionNeo, config)
     val result = esService.getFriends(walletId).unsafeRunSync()
@@ -98,6 +104,9 @@ class EsServiceSpec extends AnyFlatSpec with Matchers with MockFactory {
     (mockEsClient.getLastBlock _)
       .expects()
       .returns(IO.pure(100))
+    (mockEsClient.getContractInfo _)
+      .expects(*)
+      .returns(IO.pure(Set.empty))
 
     val esService = EsService[IO](mockEsClient, mockTransactionNeo, config)
     val result = esService.getTransactions(walletId).unsafeRunSync()
