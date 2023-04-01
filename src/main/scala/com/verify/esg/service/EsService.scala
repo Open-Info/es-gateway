@@ -4,8 +4,8 @@ import cats.effect.{Clock, Sync}
 import cats.syntax.all._
 import com.verify.esg.EsServiceConfig
 import com.verify.esg.client.etherscan.EsClient
-import com.verify.esg.neo.TransactionNeo
 import com.verify.esg.model.{EthAddressId, EthTransaction}
+import com.verify.esg.neo.TransactionNeo
 
 trait EsService[F[_]] {
   def getFriends(walletId: EthAddressId): F[Set[EthAddressId]]
@@ -38,7 +38,7 @@ object EsService {
         endBlock        <- esClient.getLastBlock
         startBlock       = endBlock - config.numBlocks
         esTransactions  <- esClient.getTransactions(walletId, startBlock, endBlock)
-        walletIds        = esTransactions.foldLeft(Set.empty[EthAddressId])((acc, t) => acc ++ t.to.toSet + t.from)
+        walletIds        = esTransactions.flatMap(t => t.to.toVector :+ t.from).toSet
         esContractInfo  <- esClient.getContractInfo(walletIds)
         ethTransactions  = esTransactions.flatMap(EthTransaction.build(_, esContractInfo))
         _               <- transactionNeo.pushTransactions(ethTransactions)

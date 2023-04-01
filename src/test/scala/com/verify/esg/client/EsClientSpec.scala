@@ -17,7 +17,7 @@ import sttp.client3.{Request, UriContext}
 import sttp.model.{Method, StatusCode}
 
 class EsClientSpec extends AnyFlatSpec with Matchers with EitherValues {
-  val esResponse: String = ras("es-response.json").getOrElse(fail("Could not read esResponse from resources"))
+  val esResponse: String = ras("es-response.json").get
 
   val config: EsClientConfig =
     EsClientConfig(

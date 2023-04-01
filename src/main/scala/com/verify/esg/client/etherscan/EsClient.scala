@@ -1,12 +1,11 @@
 package com.verify.esg.client.etherscan
 
-import cats.Parallel
 import cats.effect.{Clock, Sync}
 import cats.syntax.all._
 import com.verify.esg.EsClientConfig
 import com.verify.esg.client.etherscan.model.response.{EsBlockTimestampResponse, EsContractInfoResponse, EsTransactionsResponse}
 import com.verify.esg.client.etherscan.model.{EsContractInfo, EsTransaction}
-import com.verify.esg.model.{DeserializationError, EthAddressId, SttpError, HttpError => DomHttpError}
+import com.verify.esg.model.EthAddressId
 import io.chrisdavenport.cats.effect.time.JavaTime
 import org.typelevel.log4cats.Logger
 import org.typelevel.log4cats.slf4j.Slf4jLogger
@@ -22,10 +21,10 @@ trait EsClient[F[_]] {
 }
 
 object EsClient {
-  def apply[F[_] : Sync : Clock : Parallel](esClientConfig: EsClientConfig, sttpBackend: SttpBackend[F, Any]): EsClient[F] =
+  def apply[F[_]: Sync: Clock](esClientConfig: EsClientConfig, sttpBackend: SttpBackend[F, Any]): EsClient[F] =
     new EsClientImpl[F](esClientConfig, sttpBackend)
 
-  private final class EsClientImpl[F[_] : Sync : Clock : Parallel](
+  private final class EsClientImpl[F[_]: Sync: Clock](
     esClientConfig: EsClientConfig,
     sttpBackend: SttpBackend[F, Any]
   ) extends EsClient[F] {
@@ -53,19 +52,10 @@ object EsClient {
           .get(uri)
           .response(asJson[EsTransactionsResponse])
 
-      val responseF =
+      Logger[F].debug(s"Sending request GET etherscan.txlist for walletId $walletId") *>
         req
-          .send(sttpBackend)
-          .redeem(
-            e => SttpError(e).asLeft,
-            r => r.body.leftMap {
-              case DeserializationException(_, e) => DeserializationError(e)
-              case HttpError(_, statusCode) => DomHttpError(statusCode)
-            }
-          )
-          .rethrow
-
-      Logger[F].debug(s"Sending request GET etherscan.txlist for walletId $walletId") *> responseF.map(_.result)
+          .sendAndHandle(sttpBackend)
+          .map(_.result)
     }
 
     override def getLastBlock: F[Long] = {
@@ -89,22 +79,10 @@ object EsClient {
             .response(asJson[EsBlockTimestampResponse])
         }
 
-      val responseF =
-        reqF.flatMap { req =>
-          req
-            .send(sttpBackend)
-            .redeem(
-              e => SttpError(e).asLeft,
-              r => r.body.leftMap {
-                case DeserializationException(_, e) => DeserializationError(e)
-                case HttpError(_, statusCode) => DomHttpError(statusCode)
-              }
-            )
-            .rethrow
-        }
-
       Logger[F].debug(s"Sending request GET etherscan.getblocknobytime") *>
-        responseF.flatMap(r => Try(r.result.toLong).toEither.pure[F].rethrow)
+        reqF
+          .flatMap(_.sendAndHandle(sttpBackend))
+          .flatMap(r => Try(r.result.toLong).toEither.pure[F].rethrow)
     }
 
     override def getContractInfo(walletIds: Set[EthAddressId]): F[Set[EsContractInfo]] = {
@@ -122,27 +100,14 @@ object EsClient {
           .get(uri(walletIds))
           .response(asJson[EsContractInfoResponse])
 
-      walletIds.grouped(5).toVector
+      walletIds
+        .grouped(5)
+        .toVector
         .traverse { walletIds =>
-          val responseF =
-            reqF(walletIds)
-              .send(sttpBackend)
-              .redeem(
-                e => SttpError(e).asLeft,
-                r => r.body.leftMap {
-                  case DeserializationException(_, e) => DeserializationError(e)
-                  case HttpError(_, statusCode) => DomHttpError(statusCode)
-                }
-              )
-              .rethrow
-
+          val responseF = reqF(walletIds).sendAndHandle(sttpBackend)
           Logger[F].debug(s"Sending request GET etherscan.getcontractcreation for walletIds ${walletIds.mkString(", ")}") *> responseF
         }
-        .map {
-          _.foldLeft(Set.empty[EsContractInfo]) { (acc, response) =>
-            acc ++ response.result.toSet.flatten
-          }
-        }
+        .map(_.flatMap(_.result).flatten.toSet)
     }
   }
 }
