@@ -15,7 +15,7 @@ package object model {
     override def apply(value: String): Either[BuildFailure[Type], Type] =
       regex
         .findFirstIn(value)
-        .as(unsafe(value))
+        .as(unsafe(value.toLowerCase))
         .toRight(BuildFailure(s"'$value'"))
 
     implicit class EthAddressOps(val ethString: String) extends AnyVal {

@@ -9,6 +9,10 @@ sealed trait EthAddress {
 }
 
 object EthAddress {
+  def apply(addressId: EthAddressId, isContract: Boolean): EthAddress =
+    if (isContract) EthContract(addressId)
+    else EthWallet(addressId)
+
   implicit val encoder: Encoder[EthAddress] =
     Encoder.instance {
       case e: EthContract => e.asJson
