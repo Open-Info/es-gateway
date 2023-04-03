@@ -18,12 +18,15 @@ lazy val scalaMockVersion = "5.2.0"
 lazy val neotypesVersion = "0.23.2"
 lazy val neo4jVersion = "5.6.0"
 lazy val catsEffectTimeVersion = "0.2.0"
+lazy val enumeratumVersion = "1.7.2"
 
 lazy val root = (project in file("."))
   .settings(
     name := "es-gateway",
     Compile / mainClass := Some("com.verify.esg.Main"),
     Compile / discoveredMainClasses := Seq.empty,
+
+    libraryDependencies += "com.beachape" %% "enumeratum" % enumeratumVersion,
 
     libraryDependencies ++= Seq(
       "com.softwaremill.sttp.client3" %% "core",
@@ -46,7 +49,8 @@ lazy val root = (project in file("."))
     libraryDependencies ++= Seq(
       "io.github.neotypes" %% "neotypes-core",
       "io.github.neotypes" %% "neotypes-generic",
-      "io.github.neotypes" %% "neotypes-cats-effect"
+      "io.github.neotypes" %% "neotypes-cats-effect",
+      "io.github.neotypes" %% "neotypes-enumeratum"
     ).map(_ % neotypesVersion),
 
     libraryDependencies ++= Seq(

@@ -6,6 +6,7 @@ import io.circe.generic.semiauto.deriveDecoder
 
 final case class EsTransaction(
   hash: String,
+  timeStamp: Long,
   to: Option[EthAddressId],
   from: EthAddressId,
   value: TransactionValue,

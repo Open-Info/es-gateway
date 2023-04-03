@@ -1,6 +1,6 @@
 package com.verify.esg.client.etherscan
 
-import cats.effect.{Clock, Sync}
+import cats.effect.Sync
 import cats.syntax.all._
 import com.verify.esg.EsClientConfig
 import com.verify.esg.client.etherscan.model.response.{EsBlockTimestampResponse, EsContractInfoResponse, EsTransactionsResponse}
@@ -15,16 +15,18 @@ import sttp.client3.circe._
 import scala.util.Try
 
 trait EsClient[F[_]] {
+  def getLastNBlocksT(walletId: EthAddressId, n: Int): F[Vector[EsTransaction]]
   def getTransactions(walletId: EthAddressId, startBlock: Long, endBlock: Long): F[Vector[EsTransaction]]
-  def getLastBlock: F[Long]
+  def getBlock(unixEpoch: Long): F[Long]
+  def getLatestBlock: F[Long]
   def getContractInfo(walletIds: Set[EthAddressId]): F[Set[EsContractInfo]]
 }
 
 object EsClient {
-  def apply[F[_]: Sync: Clock](esClientConfig: EsClientConfig, sttpBackend: SttpBackend[F, Any]): EsClient[F] =
+  def apply[F[_]: Sync](esClientConfig: EsClientConfig, sttpBackend: SttpBackend[F, Any]): EsClient[F] =
     new EsClientImpl[F](esClientConfig, sttpBackend)
 
-  private final class EsClientImpl[F[_]: Sync: Clock](
+  private final class EsClientImpl[F[_]: Sync](
     esClientConfig: EsClientConfig,
     sttpBackend: SttpBackend[F, Any]
   ) extends EsClient[F] {
@@ -52,38 +54,17 @@ object EsClient {
           .get(uri)
           .response(asJson[EsTransactionsResponse])
 
-      Logger[F].debug(s"Sending request GET etherscan.txlist for walletId $walletId") *>
+      Logger[F].debug(s"Sending request GET etherscan.txlist for walletId: $walletId") *>
         req
           .sendAndHandle(sttpBackend)
           .map(_.result)
     }
 
-    override def getLastBlock: F[Long] = {
-      val unixEpoch = JavaTime[F].getInstant.map(_.getEpochSecond)
-      val uriF =
-        unixEpoch.map { epoch =>
-          esClientConfig.uri
-            .withParams(
-              ("module", "block"),
-              ("action", "getblocknobytime"),
-              ("timestamp", epoch.toString),
-              ("closest", "before"),
-              ("apikey", esClientConfig.apiKey)
-            )
-        }
-
-      val reqF =
-        uriF.map { uri =>
-          basicRequest
-            .get(uri)
-            .response(asJson[EsBlockTimestampResponse])
-        }
-
-      Logger[F].debug(s"Sending request GET etherscan.getblocknobytime") *>
-        reqF
-          .flatMap(_.sendAndHandle(sttpBackend))
-          .flatMap(r => Try(r.result.toLong).toEither.pure[F].rethrow)
-    }
+    override def getLatestBlock: F[Long] =
+      JavaTime[F]
+        .getInstant
+        .map(_.getEpochSecond)
+        .flatMap(getBlock)
 
     override def getContractInfo(walletIds: Set[EthAddressId]): F[Set[EsContractInfo]] = {
       def uri(walletIds: Set[EthAddressId]) =
@@ -105,9 +86,33 @@ object EsClient {
         .toVector
         .traverse { walletIds =>
           val responseF = reqF(walletIds).sendAndHandle(sttpBackend)
-          Logger[F].debug(s"Sending request GET etherscan.getcontractcreation for walletIds ${walletIds.mkString(", ")}") *> responseF
+          Logger[F].debug(s"Sending request GET etherscan.getcontractcreation for walletIds: ${walletIds.mkString(", ")}") *> responseF
         }
         .map(_.flatMap(_.result).flatten.toSet)
     }
+
+    override def getBlock(unixEpoch: Long): F[Long] = {
+      val uri =
+        esClientConfig.uri
+          .withParams(
+            ("module", "block"),
+            ("action", "getblocknobytime"),
+            ("timestamp", unixEpoch.toString),
+            ("closest", "before"),
+            ("apikey", esClientConfig.apiKey)
+          )
+
+      val req =
+        basicRequest
+          .get(uri)
+          .response(asJson[EsBlockTimestampResponse])
+
+      req
+        .sendAndHandle(sttpBackend)
+        .flatMap(r => Try(r.result.toLong).toEither.pure[F].rethrow)
+    }
+
+    override def getLastNBlocksT(walletId: EthAddressId, n: Int): F[Vector[EsTransaction]] =
+      getLatestBlock.flatMap(b => getTransactions(walletId, b - n, b))
   }
 }

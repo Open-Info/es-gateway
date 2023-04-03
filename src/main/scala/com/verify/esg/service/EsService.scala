@@ -4,7 +4,7 @@ import cats.effect.{Clock, Sync}
 import cats.syntax.all._
 import com.verify.esg.EsServiceConfig
 import com.verify.esg.client.etherscan.EsClient
-import com.verify.esg.model.{EthAddressId, EthTransaction}
+import com.verify.esg.model.{EthAddressId, EthContract, EthTransaction}
 import com.verify.esg.neo.TransactionNeo
 
 trait EsService[F[_]] {
@@ -24,10 +24,9 @@ object EsService {
     transactionNeo: TransactionNeo[F],
     config: EsServiceConfig
   ) extends EsService[F] {
-
     override def getFriends(walletId: EthAddressId): F[Set[EthAddressId]] =
       transactionsAndStore(walletId).map { transactions =>
-        val wallets = transactions.foldLeft(Set.empty[EthAddressId])((acc, t) => acc + t.to.addressId + t.from.addressId)
+        val wallets = transactions.flatMap(t => Vector(t.to.addressId, t.from.addressId)).toSet
         wallets - walletId
       }
 
@@ -35,12 +34,12 @@ object EsService {
 
     private def transactionsAndStore(walletId: EthAddressId): F[Vector[EthTransaction]] =
       for {
-        endBlock        <- esClient.getLastBlock
-        startBlock       = endBlock - config.numBlocks
-        esTransactions  <- esClient.getTransactions(walletId, startBlock, endBlock)
-        walletIds        = esTransactions.flatMap(t => t.to.toVector :+ t.from).toSet
+        esTransactions  <- esClient.getLastNBlocksT(walletId, config.numBlocks)
+        neighbours      <- transactionNeo.neighbours(walletId)
+        neighbourContracts = neighbours.filter(_.isInstanceOf[EthContract])
+        walletIds        = esTransactions.flatMap(t => t.to.toVector :+ t.from).toSet -- neighbours.map(_.addressId)
         esContractInfo  <- esClient.getContractInfo(walletIds)
-        ethTransactions  = esTransactions.flatMap(EthTransaction.build(_, esContractInfo))
+        ethTransactions  = esTransactions.flatMap(EthTransaction.build(_, esContractInfo.map(_.contractAddress) ++ neighbourContracts.map(_.addressId)))
         _               <- transactionNeo.pushTransactions(ethTransactions)
       } yield ethTransactions
   }
