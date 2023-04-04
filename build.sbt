@@ -26,7 +26,10 @@ lazy val root = (project in file("."))
     Compile / mainClass := Some("com.verify.esg.Main"),
     Compile / discoveredMainClasses := Seq.empty,
 
-    libraryDependencies += "com.beachape" %% "enumeratum" % enumeratumVersion,
+    libraryDependencies ++= Seq(
+      "com.beachape" %% "enumeratum",
+      "com.beachape" %% "enumeratum-circe"
+    ).map(_ % enumeratumVersion),
 
     libraryDependencies ++= Seq(
       "com.softwaremill.sttp.client3" %% "core",
