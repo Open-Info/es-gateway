@@ -2,7 +2,7 @@ package com.verify.esg.neo
 
 import cats.effect.kernel.Sync
 import cats.syntax.all._
-import com.verify.esg.model.{EthAddress, EthAddressId, EthContract, EthTransaction, EthWallet}
+import com.verify.esg.model.{EthAddress, EthAddressId, EthTransaction}
 import com.verify.esg.neo.model.{Address, TransactedWith}
 import neotypes.Driver
 import neotypes.implicits.all.neotypesSyntaxCypherStringInterpolator
@@ -45,8 +45,9 @@ object TransactionNeo {
           .vector(driver)
           .map(_.map { address =>
             address.`type` match {
-              case Address.Type.Wallet => EthWallet(address.ethAddressId)
-              case Address.Type.Contract => EthContract(address.ethAddressId)
+              case EthAddress.Type.Wallet => EthAddress.Wallet(address.ethAddressId)
+              case EthAddress.Type.Contract => EthAddress.Contract(address.ethAddressId)
+              case EthAddress.Type.Unknown => EthAddress.Unknown(address.ethAddressId)
             }
           })
       }

@@ -1,6 +1,7 @@
 package com.verify.esg
 
 import cats.effect._
+import cats.syntax.all._
 import com.verify.esg.client.etherscan.EsClient
 import com.verify.esg.neo.TransactionNeo
 import com.verify.esg.service.EsService
@@ -23,8 +24,8 @@ object Main extends IOApp {
     }
 
   private def resources: Resource[IO, (SttpBackend[IO, Any], Driver[IO])] =
-    for {
-      backend <- HttpClientCatsBackend.resource[IO]()
-      driver <- GraphDatabase.driver[IO]("bolt://localhost:7687", AuthTokens.basic("neo4j", "password"))
-    } yield (backend, driver)
+    (
+      HttpClientCatsBackend.resource[IO](),
+      GraphDatabase.driver[IO]("bolt://localhost:7687", AuthTokens.basic("neo4j", "password"))
+    ).mapN((_, _))
 }

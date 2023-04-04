@@ -1,31 +1,22 @@
 package com.verify.esg.neo.model
 
-import com.verify.esg.model.{EthAddress, EthAddressId, EthContract, EthWallet}
-import enumeratum.EnumEntry.Lowercase
-import enumeratum.{Enum, EnumEntry}
+import com.verify.esg.model.{EthAddress, EthAddressId}
 import neotypes.QueryArgMapper
-import neotypes.enumeratum.NeotypesEnum
 import neotypes.generic.semiauto.{deriveCaseClassArgMapper, deriveProductResultMapper}
 import neotypes.mappers.ResultMapper
 
-final case class Address(`type`: Address.Type, ethAddressId: EthAddressId)
+final case class Address(`type`: EthAddress.Type, ethAddressId: EthAddressId)
 object Address {
-  def wallet(ethAddressId: EthAddressId): Address = Address(Address.Type.Wallet, ethAddressId)
-  def contract(ethAddressId: EthAddressId): Address = Address(Address.Type.Contract, ethAddressId)
+  def wallet(ethAddressId: EthAddressId): Address = Address(EthAddress.Type.Wallet, ethAddressId)
+  def contract(ethAddressId: EthAddressId): Address = Address(EthAddress.Type.Contract, ethAddressId)
+  def unknown(ethAddressId: EthAddressId): Address = Address(EthAddress.Type.Unknown, ethAddressId)
 
   def fromEthAddress(ethAddress: EthAddress): Address =
     ethAddress match {
-      case EthContract(ethAddressId) => contract(ethAddressId)
-      case EthWallet(ethAddressId) => wallet(ethAddressId)
+      case EthAddress.Contract(ethAddressId) => contract(ethAddressId)
+      case EthAddress.Wallet(ethAddressId) => wallet(ethAddressId)
+      case EthAddress.Unknown(ethAddressId) => unknown(ethAddressId)
     }
-
-  sealed trait Type extends EnumEntry with Lowercase
-  object Type extends Enum[Type] with NeotypesEnum[Type] {
-    case object Wallet extends Type
-    case object Contract extends Type
-
-    override val values: IndexedSeq[Type] = findValues
-  }
 
   implicit val queryArgMapper: QueryArgMapper[Address] = deriveCaseClassArgMapper
   implicit val resultMapper: ResultMapper[Address] = deriveProductResultMapper

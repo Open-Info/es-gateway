@@ -15,7 +15,7 @@ import sttp.client3.circe._
 import scala.util.Try
 
 trait EsClient[F[_]] {
-  def getLastNBlocksT(walletId: EthAddressId, n: Int): F[Vector[EsTransaction]]
+  def getLastNBlockTransactions(walletId: EthAddressId, n: Int): F[Vector[EsTransaction]]
   def getTransactions(walletId: EthAddressId, startBlock: Long, endBlock: Long): F[Vector[EsTransaction]]
   def getBlock(unixEpoch: Long): F[Long]
   def getLatestBlock: F[Long]
@@ -112,7 +112,7 @@ object EsClient {
         .flatMap(r => Try(r.result.toLong).toEither.pure[F].rethrow)
     }
 
-    override def getLastNBlocksT(walletId: EthAddressId, n: Int): F[Vector[EsTransaction]] =
+    override def getLastNBlockTransactions(walletId: EthAddressId, n: Int): F[Vector[EsTransaction]] =
       getLatestBlock.flatMap(b => getTransactions(walletId, b - n, b))
   }
 }
