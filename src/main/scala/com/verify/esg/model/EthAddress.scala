@@ -38,8 +38,8 @@ object EthAddress {
     override val values: IndexedSeq[Type] = findValues
   }
 
-  def apply(addressId: EthAddressId, isContract: Option[Boolean]): EthAddress =
-    isContract
+  def apply(addressId: EthAddressId, maybeIsContract: Option[Boolean]): EthAddress =
+    maybeIsContract
       .map { isContract =>
         if (isContract) Contract(addressId)
         else Wallet(addressId)

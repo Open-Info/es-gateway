@@ -25,8 +25,8 @@ class WalletRouteSpec extends AnyFlatSpec with Matchers with MockFactory {
       "0xe0b32c2e7fd602fd47e64c319d00e3cbbad31ea3"
     ).map(_.unsafeEth)
 
-  val transactions: Vector[EthTransaction] =
-    Vector(
+  val transactions: Set[EthTransaction] =
+    Set(
       EthTransaction(
         hash = "0x80d527379ae8940ca3dc15042e73f16b25446a90336824b5a24c3d34c5dfd41a",
         timestamp = Instant.ofEpochSecond(1654646411L),

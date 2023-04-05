@@ -7,7 +7,7 @@ import neotypes.mappers.ResultMapper
 
 final case class TransactedWith(
   hash: String,
-  timestamp: Long,
+  timestamp: Long, // this value is in UnixTime https://www.unixtimestamp.com/
   value: TransactionValue
 )
 

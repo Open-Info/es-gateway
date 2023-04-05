@@ -15,8 +15,7 @@ final case class EthTransaction(
 )
 
 object EthTransaction {
-  private def build(to: Option[EthAddress], from: EthAddress, esTransaction: EsTransaction): Option[EthTransaction] =
-    to.map { to =>
+  private def build(to: EthAddress, from: EthAddress, esTransaction: EsTransaction): EthTransaction =
       EthTransaction(
         hash = esTransaction.hash,
         timestamp = Instant.ofEpochSecond(esTransaction.timeStamp),
@@ -24,9 +23,8 @@ object EthTransaction {
         from = from,
         value = esTransaction.value
       )
-    }
 
-  // build EthTransaction from EsTransaction based on a known set of contracts
+  // build EthTransaction from EsTransaction based on an optional known set of contracts
   def build(esTransaction: EsTransaction, contracts: Option[Set[EthAddressId]]): Option[EthTransaction] = {
     val to =
       esTransaction.to
@@ -35,7 +33,7 @@ object EthTransaction {
 
     val from = EthAddress(esTransaction.from, contracts.map(_.contains(esTransaction.from)))
 
-    build(to, from, esTransaction)
+    to.map(build(_, from, esTransaction))
   }
 
   implicit val encoder: Encoder[EthTransaction] = deriveEncoder

@@ -20,8 +20,8 @@ class EsServiceSpec extends AnyFlatSpec with Matchers with MockFactory {
 
   val walletId: EthAddressId = "0x0e9989e703f39880a8e2759bb93b4a9ddd11accf".unsafeEth
 
-  val transactions: Vector[EsTransaction] =
-    Vector(
+  val transactions: Set[EsTransaction] =
+    Set(
       EsTransaction(
         hash = "0x80d527379ae8940ca3dc15042e73f16b25446a90336824b5a24c3d34c5dfd41a",
         timeStamp = 1654646411L,
@@ -55,7 +55,7 @@ class EsServiceSpec extends AnyFlatSpec with Matchers with MockFactory {
     (mockTransactionNeo.pushTransactions _).expects(*).returning(IO.unit)
 
     val mockEsClient = mock[EsClient[IO]]
-    (mockEsClient.getLastNBlockTransactions _)
+    (mockEsClient.getTransactions: (EthAddressId, Int) => IO[Set[EsTransaction]])
       .expects(walletId, 100)
       .returns(IO.pure(transactions))
 
@@ -74,9 +74,9 @@ class EsServiceSpec extends AnyFlatSpec with Matchers with MockFactory {
     (mockTransactionNeo.pushTransactions _).expects(*).returning(IO.unit)
 
     val mockEsClient = mock[EsClient[IO]]
-    (mockEsClient.getLastNBlockTransactions _)
+    (mockEsClient.getTransactions: (EthAddressId, Int) => IO[Set[EsTransaction]])
       .expects(walletId, 100)
-      .returns(IO.pure(Vector.empty))
+      .returns(IO.pure(Set.empty))
 
     val esService = EsService[IO](mockEsClient, mockTransactionNeo, config)
     val result = esService.getFriends(walletId).unsafeRunSync()
@@ -91,14 +91,14 @@ class EsServiceSpec extends AnyFlatSpec with Matchers with MockFactory {
     (mockTransactionNeo.pushTransactions _).expects(*).returning(IO.unit)
 
     val mockEsClient = mock[EsClient[IO]]
-    (mockEsClient.getLastNBlockTransactions _)
+    (mockEsClient.getTransactions: (EthAddressId, Int) => IO[Set[EsTransaction]])
       .expects(walletId, 100)
       .returns(IO.pure(transactions))
 
     val esService = EsService[IO](mockEsClient, mockTransactionNeo, config)
     val result = esService.getTransactions(walletId).unsafeRunSync()
     val expected =
-      Vector(
+      Set(
         EthTransaction(
           hash = "0x80d527379ae8940ca3dc15042e73f16b25446a90336824b5a24c3d34c5dfd41a",
           timestamp = Instant.ofEpochSecond(1654646411L),
