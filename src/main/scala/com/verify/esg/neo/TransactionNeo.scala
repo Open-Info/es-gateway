@@ -10,7 +10,7 @@ import org.typelevel.log4cats.Logger
 import org.typelevel.log4cats.slf4j.Slf4jLogger
 
 trait TransactionNeo[F[_]] {
-  def pushTransactions(transactions: Vector[EthTransaction]): F[Unit]
+  def pushTransactions(transactions: Set[EthTransaction]): F[Unit]
   def neighbours(address: EthAddressId): F[Vector[EthAddress]]
 }
 
@@ -20,26 +20,31 @@ object TransactionNeo {
   private final class TransactionNeoImpl[F[_]: Sync](driver: Driver[F]) extends TransactionNeo[F] {
     implicit val logger: Logger[F] = Slf4jLogger.getLogger[F]
 
-    override def pushTransactions(transactions: Vector[EthTransaction]): F[Unit] =
+    override def pushTransactions(transactions: Set[EthTransaction]): F[Unit] =
       Logger[F].debug(s"Pushing ${transactions.size} transactions to Neo4j") *>
-        transactions.traverse { transaction =>
-          val fromAddress = Address.fromEthAddress(transaction.from)
-          val toAddress = Address.fromEthAddress(transaction.to)
-          val transactedWith = TransactedWith.fromEthTransaction(transaction)
+        transactions
+          .toVector
+          .traverse { transaction =>
+            val fromAddress = Address.fromEthAddress(transaction.from)
+            val toAddress = Address.fromEthAddress(transaction.to)
+            val transactedWith = TransactedWith.fromEthTransaction(transaction)
 
-          c"""
+            c"""
               MERGE (from:Address { $fromAddress })
               MERGE (to:Address { $toAddress })
               MERGE (from)-[t:TRANSACTED_WITH { $transactedWith }]->(to)
               """
-            .query[Unit]
-            .execute(driver)
-        }.map(_ => ())
+              .query[Unit]
+              .execute(driver)
+              .handleErrorWith(Logger[F].warn(_)(s"Error pushing transaction to Neo4j $transaction").as(()))
+          }
+          .as(())
 
     override def neighbours(addressId: EthAddressId): F[Vector[EthAddress]] =
       Logger[F].debug(s"Getting neighbours for walletId: ${addressId.value}") *> {
         c"""
-            MATCH (:Address { ethAddressId: $addressId })--(b:Address) RETURN b
+            MATCH (:Address { ethAddressId: $addressId })--(b:Address)
+            RETURN b
             """
           .readOnlyQuery[Address]
           .vector(driver)

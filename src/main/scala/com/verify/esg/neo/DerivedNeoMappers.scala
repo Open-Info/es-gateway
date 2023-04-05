@@ -11,7 +11,8 @@ trait DerivedNeoValueMapper {
   implicit def valueMapper[T, S](implicit
     builder: HasBuilder.Aux[T, S],
     valueMapper: ValueMapper[S]
-  ): ValueMapper[T] = valueMap[T, S]
+  ): ValueMapper[T] =
+    valueMap[T, S]
 
   protected def valueMap[T, S](
     fieldName: String,
@@ -29,5 +30,6 @@ trait DerivedNeoParameterMapper {
   implicit def parameterMapper[T, S](implicit
     extractor: HasExtractor.Aux[T, S],
     parameterMapper: ParameterMapper[S]
-  ): ParameterMapper[T] = parameterMapper.contramap(extractor.extract)
+  ): ParameterMapper[T] =
+    parameterMapper.contramap(extractor.extract)
 }

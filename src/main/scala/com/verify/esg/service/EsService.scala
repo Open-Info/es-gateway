@@ -9,7 +9,7 @@ import com.verify.esg.neo.TransactionNeo
 
 trait EsService[F[_]] {
   def getFriends(walletId: EthAddressId): F[Set[EthAddressId]]
-  def getTransactions(walletId: EthAddressId): F[Vector[EthTransaction]]
+  def getTransactions(walletId: EthAddressId): F[Set[EthTransaction]]
 }
 
 object EsService {
@@ -28,16 +28,16 @@ object EsService {
 
     override def getFriends(walletId: EthAddressId): F[Set[EthAddressId]] =
       transactionsAndStore(walletId).map { transactions =>
-        val wallets = transactions.flatMap(t => Vector(t.to.addressId, t.from.addressId)).toSet
+        val wallets = transactions.flatMap(t => Vector(t.to.addressId, t.from.addressId))
         wallets - walletId
       }
 
-    override def getTransactions(walletId: EthAddressId): F[Vector[EthTransaction]] =
+    override def getTransactions(walletId: EthAddressId): F[Set[EthTransaction]] =
       transactionsAndStore(walletId)
 
-    private def transactionsAndStore(walletId: EthAddressId): F[Vector[EthTransaction]] =
+    private def transactionsAndStore(walletId: EthAddressId): F[Set[EthTransaction]] =
       for {
-        esTransactions  <- esClient.getLastNBlockTransactions(walletId, config.numBlocks)
+        esTransactions  <- esClient.getTransactions(walletId, config.numBlocks)
         ethTransactions  = esTransactions.flatMap(EthTransaction.build(_, None))
         _               <- transactionNeo.pushTransactions(ethTransactions)
       } yield ethTransactions

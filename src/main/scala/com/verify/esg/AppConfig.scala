@@ -12,19 +12,11 @@ import sttp.model.Uri
 
 import scala.util.Try
 
-final case class EsClientConfig(
-  uri: Uri,
-  apiKey: String
-)
+final case class EsClientConfig(uri: Uri, apiKey: String)
 
-final case class EsServiceConfig(
-  numBlocks: Int,
-)
+final case class EsServiceConfig(numBlocks: Int)
 
-final case class ServerConfig(
-  port: Port,
-  host: Host
-)
+final case class ServerConfig(port: Port, host: Host)
 
 final case class AppConfig(
   esClientConfig: EsClientConfig,

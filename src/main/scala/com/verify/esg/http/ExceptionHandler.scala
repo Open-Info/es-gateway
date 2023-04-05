@@ -8,10 +8,10 @@ import org.http4s.dsl.Http4sDsl
 import org.typelevel.log4cats.Logger
 
 trait ExceptionHandler[F[_]] extends Http4sDsl[F] {
-  type LoggingFunction[G[_]]  = PartialFunction[Throwable, Throwable => (=> String) => G[Unit]]
+  type LogLevelFunction[G[_]] = PartialFunction[Throwable, Throwable => (=> String) => G[Unit]]
   type ResponseFunction[G[_]] = PartialFunction[Throwable, G[Response[G]]]
 
-  def loggingF: LoggingFunction[F]
+  def loggingF: LogLevelFunction[F]
   def responseF: ResponseFunction[F]
 
   def apply(metricName: MetricName)(implicit m: Monad[F], logger: Logger[F]): PartialFunction[Throwable, F[Response[F]]] =
@@ -30,7 +30,7 @@ trait ExceptionHandler[F[_]] extends Http4sDsl[F] {
 
 object ExceptionHandler {
   def orElse[F[_]](`this`: ExceptionHandler[F], that: ExceptionHandler[F]): ExceptionHandler[F] = new ExceptionHandler[F] {
-    override def loggingF: LoggingFunction[F]   = `this`.loggingF orElse that.loggingF
+    override def loggingF: LogLevelFunction[F] = `this`.loggingF orElse that.loggingF
     override def responseF: ResponseFunction[F] = `this`.responseF orElse that.responseF
   }
 }

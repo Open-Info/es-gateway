@@ -7,8 +7,8 @@ import io.circe.generic.semiauto.deriveDecoder
 final case class EsTransactionsResponse(
   status: String,
   message: String,
-  result: Vector[EsTransaction]
-) extends EsResponse[Vector[EsTransaction]]
+  result: Set[EsTransaction]
+) extends EsResponse[Set[EsTransaction]]
 
 object EsTransactionsResponse {
   implicit val decoder: Decoder[EsTransactionsResponse] = deriveDecoder

@@ -52,7 +52,7 @@ class EsClientSpec extends AnyFlatSpec with Matchers with EitherValues {
     val result = esClient.getTransactions(walletId, 0, 1).unsafeRunSync()
 
     val expected =
-      Vector(
+      Set(
         EsTransaction(
           hash = "0x80d527379ae8940ca3dc15042e73f16b25446a90336824b5a24c3d34c5dfd41a",
           timeStamp = 1617630210L,
