@@ -42,11 +42,7 @@ object EsClient {
       (getBlock(start.getEpochSecond), getBlock(end.getEpochSecond))
         .parFlatMapN(getTransactions(walletId, _, _))
 
-    override def getTransactions(
-      walletId: EthAddressId,
-      startBlock: Long,
-      endBlock: Long
-    ): F[Set[EsTransaction]] = {
+    override def getTransactions(walletId: EthAddressId, startBlock: Long, endBlock: Long): F[Set[EsTransaction]] = {
       val uri =
         esClientConfig.uri
           .withParams(

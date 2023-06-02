@@ -17,7 +17,8 @@ import sttp.client3.{Request, UriContext}
 import sttp.model.{Method, StatusCode}
 
 class EsClientSpec extends AnyFlatSpec with Matchers with EitherValues {
-  val esResponse: String = ras("es-response.json").get
+  val esTransactionsResponse: String = ras("es-transactions-response.json").get
+  val esBlockResponse: String = ras("es-block-response.json").get
 
   val config: EsClientConfig =
     EsClientConfig(
@@ -41,12 +42,25 @@ class EsClientSpec extends AnyFlatSpec with Matchers with EitherValues {
         ("apikey", "some-key"))) &&
       (request.uri.path == Seq("api"))
 
-  behavior of "getTransactions"
+  def goodBlockRequest(request: Request[_, _]): Boolean =
+    (request.method is Method.GET) &&
+      (request.uri.scheme contains "https") &&
+      (request.uri.host contains "api.etherscan.io") &&
+      (request.uri.paramsSeq == Seq(
+        ("module", "block"),
+        ("action", "getblocknobytime"),
+        ("timestamp", "1"),
+        ("closest", "before"),
+        ("apikey", "some-key"))) &&
+      (request.uri.path == Seq("api"))
+
+  behavior of "getTransactions by startBlock and endBlock"
 
   it should "not generate an error on successful requests" in {
-    val backend = HttpClientCatsBackend.stub[IO]
-      .whenRequestMatches(goodTransactionsRequest)
-      .thenRespond(esResponse)
+    val backend =
+      HttpClientCatsBackend.stub[IO]
+        .whenRequestMatches(goodTransactionsRequest)
+        .thenRespond(esTransactionsResponse)
 
     val esClient = EsClient[IO](config, backend)
     val result = esClient.getTransactions(walletId, 0, 1).unsafeRunSync()
@@ -82,10 +96,11 @@ class EsClientSpec extends AnyFlatSpec with Matchers with EitherValues {
     result shouldBe expected
   }
 
-  it should "return a deserialization error if the partner sends bad information" in {
-    val backend = HttpClientCatsBackend.stub[IO]
-      .whenRequestMatches(goodTransactionsRequest)
-      .thenRespond("""{ "foo": "bar" }""")
+  it should "return a deserialization error if the response is incorrect" in {
+    val backend =
+      HttpClientCatsBackend.stub[IO]
+        .whenRequestMatches(goodTransactionsRequest)
+        .thenRespond("""{ "foo": "bar" }""")
 
     val esClient = EsClient[IO](config, backend)
     val result = esClient.getTransactions(walletId, 0, 1).attempt.unsafeRunSync()
@@ -95,9 +110,10 @@ class EsClientSpec extends AnyFlatSpec with Matchers with EitherValues {
   }
 
   it should "return an sttp error if the request fails on send/receive" in {
-    val backend = HttpClientCatsBackend.stub[IO]
-      .whenRequestMatches(goodTransactionsRequest)
-      .thenRespondF(IO.raiseError(new Throwable("Boom!")))
+    val backend =
+      HttpClientCatsBackend.stub[IO]
+        .whenRequestMatches(goodTransactionsRequest)
+        .thenRespondF(IO.raiseError(new Throwable("Boom!")))
 
     val esClient = EsClient[IO](config, backend)
     val result = esClient.getTransactions(walletId, 0, 1).attempt.unsafeRunSync()
@@ -116,5 +132,55 @@ class EsClientSpec extends AnyFlatSpec with Matchers with EitherValues {
     val error = result.left.value
 
     error shouldBe a[HttpDomainError]
+  }
+
+  behavior of "getBlock"
+
+  it should "not generate an error on successful requests" in {
+    val backend =
+      HttpClientCatsBackend.stub[IO]
+        .whenRequestMatches(goodBlockRequest)
+        .thenRespond(esBlockResponse)
+
+    val esClient = EsClient[IO](config, backend)
+    val result = esClient.getBlock(1L).unsafeRunSync()
+
+    result shouldBe 1L
+  }
+
+  it should "return a deserialization error if the response is incorrect" in {
+    val backend =
+      HttpClientCatsBackend.stub[IO]
+        .whenRequestMatches(goodBlockRequest)
+        .thenRespond("""{ "foo": "bar" }""")
+
+    val esClient = EsClient[IO](config, backend)
+    val result = esClient.getBlock(1L).attempt.unsafeRunSync().left.value
+
+    result shouldBe a[DeserializationError]
+  }
+
+  it should "return an sttp error if the request fails on send/receive" in {
+    val backend =
+      HttpClientCatsBackend.stub[IO]
+        .whenRequestMatches(goodBlockRequest)
+        .thenRespondF(IO.raiseError(new Throwable("Boom!")))
+
+    val esClient = EsClient[IO](config, backend)
+    val result = esClient.getBlock(1L).attempt.unsafeRunSync().left.value
+
+    result shouldBe a[SttpError]
+  }
+
+  it should "return an HTTP error for all HTTP error codes" in {
+    val backend =
+      HttpClientCatsBackend.stub[IO]
+        .whenRequestMatches(goodBlockRequest)
+        .thenRespond("You ran into an error!", StatusCode.InternalServerError)
+
+    val esClient = EsClient[IO](config, backend)
+    val result = esClient.getBlock(1L).attempt.unsafeRunSync().left.value
+
+    result shouldBe a[HttpDomainError]
   }
 }
