@@ -6,7 +6,6 @@ import cats.effect.unsafe.implicits.global
 import com.verify.esg.model.EthAddressId.EthAddressOps
 import com.verify.esg.model.{EthAddress, EthAddressId, EthTransaction, TransactionValue}
 import com.verify.esg.service.EsService
-import io.circe.syntax.EncoderOps
 import io.circe.{Decoder, Json, parser}
 import org.http4s._
 import org.http4s.circe.CirceEntityCodec.circeEntityDecoder
@@ -149,7 +148,6 @@ class WalletRouteSpec extends AnyFlatSpec with Matchers with MockFactory {
 
     val (code, body) = runRequest[Json](walletRoute, request).unsafeRunSync()
 
-    println(transactions.head.from.asJson)
     code shouldBe 200
     body shouldBe expected
   }
