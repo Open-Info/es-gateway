@@ -4,8 +4,8 @@ import cats.Parallel
 import cats.effect.Sync
 import cats.syntax.all._
 import com.verify.esg.EsClientConfig
-import com.verify.esg.client.etherscan.model.response._
 import com.verify.esg.client.etherscan.model._
+import com.verify.esg.client.etherscan.model.response._
 import com.verify.esg.model.EthAddressId
 import io.chrisdavenport.cats.effect.time.JavaTime
 import org.typelevel.log4cats.Logger
@@ -14,7 +14,6 @@ import sttp.client3._
 import sttp.client3.circe._
 
 import java.time.Instant
-import scala.util.Try
 
 trait EsClient[F[_]] {
   def getTransactions(walletId: EthAddressId, numBlocks: Int): F[Set[EsTransaction]]

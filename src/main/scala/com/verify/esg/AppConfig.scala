@@ -19,9 +19,9 @@ final case class EsServiceConfig(numBlocks: Int)
 final case class ServerConfig(port: Port, host: Host)
 
 final case class AppConfig(
-  esClientConfig: EsClientConfig,
-  esServiceConfig: EsServiceConfig,
-  serverConfig: ServerConfig
+  esClient: EsClientConfig,
+  esService: EsServiceConfig,
+  httpServer: ServerConfig
 )
 
 object AppConfig {

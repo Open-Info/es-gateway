@@ -8,7 +8,6 @@ import com.verify.esg.client.etherscan.EsClient
 import com.verify.esg.client.etherscan.model.EsTransaction
 import com.verify.esg.model.EthAddressId.EthAddressOps
 import com.verify.esg.model.{EthAddress, EthAddressId, EthTransaction, TransactionValue}
-import com.verify.esg.neo.TransactionNeo
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
@@ -51,15 +50,12 @@ class EsServiceSpec extends AnyFlatSpec with Matchers with MockFactory {
   behavior of "getFriends"
 
   it should "return all first level interactions of a given WalletId" in {
-    val mockTransactionNeo: TransactionNeo[IO] = mock[TransactionNeo[IO]]
-    (mockTransactionNeo.pushTransactions _).expects(*).returning(IO.unit)
-
     val mockEsClient = mock[EsClient[IO]]
     (mockEsClient.getTransactions: (EthAddressId, Int) => IO[Set[EsTransaction]])
       .expects(walletId, 100)
       .returns(IO.pure(transactions))
 
-    val esService = EsService[IO](mockEsClient, mockTransactionNeo, config)
+    val esService = EsService[IO](mockEsClient, config)
     val expected = Set(
       "0x6dba2793e1b0e47fdab2a5156c90a05033726bdd",
       "0xe0b32c2e7fd602fd47e64c319d00e3cbbad31ea3"
@@ -70,15 +66,12 @@ class EsServiceSpec extends AnyFlatSpec with Matchers with MockFactory {
   }
 
   it should "return an empty Set if no transactions are found" in {
-    val mockTransactionNeo: TransactionNeo[IO] = mock[TransactionNeo[IO]]
-    (mockTransactionNeo.pushTransactions _).expects(*).returning(IO.unit)
-
     val mockEsClient = mock[EsClient[IO]]
     (mockEsClient.getTransactions: (EthAddressId, Int) => IO[Set[EsTransaction]])
       .expects(walletId, 100)
       .returns(IO.pure(Set.empty))
 
-    val esService = EsService[IO](mockEsClient, mockTransactionNeo, config)
+    val esService = EsService[IO](mockEsClient, config)
     val result = esService.getFriends(walletId).unsafeRunSync()
 
     result shouldBe empty
@@ -87,15 +80,12 @@ class EsServiceSpec extends AnyFlatSpec with Matchers with MockFactory {
   behavior of "getTransactions"
 
   it should "correctly extract the results from the EsTransactionsResponse" in {
-    val mockTransactionNeo: TransactionNeo[IO] = mock[TransactionNeo[IO]]
-    (mockTransactionNeo.pushTransactions _).expects(*).returning(IO.unit)
-
     val mockEsClient = mock[EsClient[IO]]
     (mockEsClient.getTransactions: (EthAddressId, Int) => IO[Set[EsTransaction]])
       .expects(walletId, 100)
       .returns(IO.pure(transactions))
 
-    val esService = EsService[IO](mockEsClient, mockTransactionNeo, config)
+    val esService = EsService[IO](mockEsClient, config)
     val result = esService.getTransactions(walletId).unsafeRunSync()
     val expected =
       Set(
